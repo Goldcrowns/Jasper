@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowUp,
   ChevronDown,
@@ -34,7 +34,43 @@ function JasperMark({ size = 56 }: { size?: number }) {
 export default function Page() {
   const [isListening, setIsListening] = useState(false)
   const [message, setMessage] = useState('')
+  const [transcript, setTranscript] = useState('')
   const [sent, setSent] = useState(false)
+  const recognitionRef = useRef<{ start: () => void; stop: () => void; onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null } | null>(null)
+
+  useEffect(() => {
+    return () => recognitionRef.current?.stop()
+  }, [])
+
+  function toggleListening() {
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+      return
+    }
+
+    const browserWindow = window as typeof window & { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any }
+    const SpeechRecognition = browserWindow.SpeechRecognition || browserWindow.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setTranscript('Tarayıcın canlı altyazıyı desteklemiyor.')
+      setIsListening(true)
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'tr-TR'
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.onresult = (event: any) => {
+      const text = Array.from(event.results as ArrayLike<ArrayLike<{ transcript: string }>>).map((result) => result[0].transcript).join('')
+      setTranscript(text)
+    }
+    recognition.onend = () => setIsListening(false)
+    recognitionRef.current = recognition
+    recognition.start()
+    setTranscript('Seni dinliyorum...')
+    setIsListening(true)
+  }
 
   function sendMessage() {
     if (!message.trim()) return
@@ -66,23 +102,20 @@ export default function Page() {
       <section className="conversation" id="chat">
         <header className="topbar"><div className="mobile-brand"><span className="brand-dot"><JasperMark size={24} /></span>jasper</div><button className="icon-button" aria-label="Ayarlar"><Settings2 /></button></header>
         <div className="conversation-body">
-          <div className="welcome">
-            <div className="hero-mark"><JasperMark size={108} /></div>
-            <p className="eyebrow">JASP İLE TANIŞ</p>
-            <h1>Bugün sana nasıl<br /><em>yardım edebilirim?</em></h1>
-            <p className="subhead">Konuş, düşüncelerini paylaş veya sadece burada ol.<br />Jasp seni dinliyor.</p>
-          </div>
-          <div className="suggestions" aria-label="Öneriler">
-            <button onClick={() => setMessage('Bugünümü planlamama yardım et')}><span>☼</span><b>Günümü planla</b><small>Verimli bir gün için</small></button>
-            <button onClick={() => setMessage('Şu an odaklanmama yardım et')}><span>◌</span><b>Odaklanmama yardım et</b><small>Birlikte derin nefes alalım</small></button>
-            <button onClick={() => setMessage('Bana ilham ver')}><span>✦</span><b>İlham ver</b><small>Yeni bir bakış açısı</small></button>
+          <div className={`voice-stage ${isListening ? 'is-listening' : ''}`}>
+            <video className="jasp-video" src="/jasper.mp4" autoPlay loop muted playsInline aria-label="Jasp animasyonu" />
+            <div className="video-fallback" aria-hidden="true"><JasperMark size={170} /></div>
+            <div className="subtitle" aria-live="polite">
+              <span className="subtitle-label">CANLI ALTYAZI</span>
+              <span>{transcript || 'Konuşmaya başlamak için mikrofona dokun'}</span>
+            </div>
           </div>
           {sent && <div className="sent-note"><span>Sen</span> Mesajın alındı. Jasp birazdan yanıt verecek.</div>}
           <div className="composer-wrap">
             <div className={`composer ${isListening ? 'listening' : ''}`}>
               <button className="attach" aria-label="Dosya ekle"><Paperclip /></button>
               <input value={message} onChange={(event) => setMessage(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.nativeEvent.isComposing && event.keyCode !== 229) sendMessage() }} placeholder={isListening ? 'Seni dinliyorum...' : 'Jasp’a bir şey söyle...'} aria-label="Jasp’a mesaj yaz" />
-              <button className="mic" onClick={() => setIsListening(!isListening)} aria-label={isListening ? 'Dinlemeyi durdur' : 'Konuşmaya başla'}><Mic /></button>
+              <button className="mic" onClick={toggleListening} aria-label={isListening ? 'Dinlemeyi durdur' : 'Konuşmaya başla'}><Mic /></button>
               <button className="send" onClick={sendMessage} aria-label="Gönder"><ArrowUp /></button>
             </div>
             <div className="composer-meta"><span><Volume2 /> Sesli konuşma için mikrofona dokun</span><span>Jasp bazen hata yapabilir</span></div>
