@@ -36,6 +36,7 @@ export default function Page() {
   const [message, setMessage] = useState('')
   const [transcript, setTranscript] = useState('')
   const [sent, setSent] = useState(false)
+  const [videoFailed, setVideoFailed] = useState(false)
   const recognitionRef = useRef<{ start: () => void; stop: () => void; onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null } | null>(null)
 
   useEffect(() => {
@@ -103,8 +104,10 @@ export default function Page() {
         <header className="topbar"><div className="mobile-brand"><span className="brand-dot"><JasperMark size={24} /></span>jasper</div><button className="icon-button" aria-label="Ayarlar"><Settings2 /></button></header>
         <div className="conversation-body">
           <div className={`voice-stage ${isListening ? 'is-listening' : ''}`}>
-            <video className="jasp-video" src="/jasper.mp4" autoPlay loop muted playsInline aria-label="Jasp animasyonu" />
-            <div className="video-fallback" aria-hidden="true"><JasperMark size={170} /></div>
+            {!videoFailed && <video className="jasp-video" src="/jasper.mp4" autoPlay loop muted playsInline aria-label="Jasp animasyonu" onError={() => setVideoFailed(true)} />}
+            <div className="video-fallback" aria-hidden="true">
+              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bloub-cercle-surpris-encre-LCvTeBSGTPqfpSY9wLlG3LSl2usrmb.png" alt="Jasp maskotu" />
+            </div>
             <div className="subtitle" aria-live="polite">
               <span className="subtitle-label">CANLI ALTYAZI</span>
               <span>{transcript || 'Konuşmaya başlamak için mikrofona dokun'}</span>
