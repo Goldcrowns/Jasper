@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowUp,
+  AudioWaveform,
   ChevronDown,
   History,
   Mic,
-  Paperclip,
   Plus,
   Settings2,
   Sparkles,
+  Square,
   Volume2,
   X,
 } from 'lucide-react'
@@ -33,10 +33,10 @@ function JasperMark({ size = 56 }: { size?: number }) {
 
 export default function Page() {
   const [isListening, setIsListening] = useState(false)
-  const [message, setMessage] = useState('')
   const [transcript, setTranscript] = useState('')
-  const [sent, setSent] = useState(false)
-  const [videoFailed, setVideoFailed] = useState(false)
+  const [isQuestion, setIsQuestion] = useState(false)
+  const [questionAnswer, setQuestionAnswer] = useState('')
+  const [isAnswering, setIsAnswering] = useState(false)
   const recognitionRef = useRef<{ start: () => void; stop: () => void; onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null } | null>(null)
 
   useEffect(() => {
@@ -65,6 +65,7 @@ export default function Page() {
     recognition.onresult = (event: any) => {
       const text = Array.from(event.results as ArrayLike<ArrayLike<{ transcript: string }>>).map((result) => result[0].transcript).join('')
       setTranscript(text)
+      setIsQuestion(/[?؟]$/.test(text.trim()) || /^(ne|nasıl|neden|niçin|kim|hangi|kaç|sence|biliyor musun|mısın|misin|mu|mı|mi)\b/i.test(text.trim()))
     }
     recognition.onend = () => setIsListening(false)
     recognitionRef.current = recognition
@@ -73,17 +74,23 @@ export default function Page() {
     setIsListening(true)
   }
 
-  function sendMessage() {
-    if (!message.trim()) return
-    setSent(true)
-    setMessage('')
-    window.setTimeout(() => setSent(false), 2800)
+  function stopListening() {
+    recognitionRef.current?.stop()
+    setIsListening(false)
+  }
+
+  function submitAnswer() {
+    if (!questionAnswer.trim()) return
+    setIsAnswering(true)
+    setIsQuestion(false)
+    setQuestionAnswer('')
+    window.setTimeout(() => setIsAnswering(false), 1800)
   }
 
   return (
     <main className="jasper-shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-dot"><JasperMark size={28} /></span><span>jasper</span></div>
+        <div className="brand"><span className="brand-dot"><AudioWaveform aria-hidden="true" /></span><span>jasper</span></div>
         <button className="new-chat" onClick={() => setSent(false)}><Plus data-icon="inline-start" /> Yeni konuşma</button>
         <nav className="side-nav" aria-label="Ana menü">
           <a className="nav-item active" href="#chat"><Sparkles data-icon="inline-start" /> Konuşma</a>
@@ -101,29 +108,33 @@ export default function Page() {
       </aside>
 
       <section className="conversation" id="chat">
-        <header className="topbar"><div className="mobile-brand"><span className="brand-dot"><JasperMark size={24} /></span>jasper</div><button className="icon-button" aria-label="Ayarlar"><Settings2 /></button></header>
+        <header className="topbar"><div className="mobile-brand"><span className="brand-dot"><AudioWaveform aria-hidden="true" /></span>jasper</div><button className="icon-button" aria-label="Ayarlar"><Settings2 /></button></header>
         <div className="conversation-body">
-          <div className={`voice-stage ${isListening ? 'is-listening' : ''}`}>
-            {!videoFailed && <video className="jasp-video" src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bloub-default-cycle%20%281%29-1PtQq74AaHUTGCK5sOHxJPoad9hfIk.mp4" autoPlay loop muted playsInline aria-label="Jasp animasyonu" onError={() => setVideoFailed(true)} />}
-            <div className="video-fallback" aria-hidden="true">
-              <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bloub-cercle-surpris-encre-LCvTeBSGTPqfpSY9wLlG3LSl2usrmb.png" alt="Jasp maskotu" />
-            </div>
-            <div className="subtitle" aria-live="polite">
-              <span className="subtitle-label">CANLI ALTYAZI</span>
-              <span>{transcript || 'Konuşmaya başlamak için mikrofona dokun'}</span>
-            </div>
-          </div>
-          {sent && <div className="sent-note"><span>Sen</span> Mesajın alındı. Jasp birazdan yanıt verecek.</div>}
-          <div className="composer-wrap">
-            <div className={`composer ${isListening ? 'listening' : ''}`}>
-              <button className="attach" aria-label="Dosya ekle"><Paperclip /></button>
-              <input value={message} onChange={(event) => setMessage(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.nativeEvent.isComposing && event.keyCode !== 229) sendMessage() }} placeholder={isListening ? 'Seni dinliyorum...' : 'Jasp’a bir şey söyle...'} aria-label="Jasp’a mesaj yaz" />
-              <button className="mic" onClick={toggleListening} aria-label={isListening ? 'Dinlemeyi durdur' : 'Konuşmaya başla'}><Mic /></button>
-              <button className="send" onClick={sendMessage} aria-label="Gönder"><ArrowUp /></button>
-            </div>
-            <div className="composer-meta"><span><Volume2 /> Sesli konuşma için mikrofona dokun</span><span>Jasp bazen hata yapabilir</span></div>
-          </div>
-        </div>
+  <div className={`voice-stage ${isListening ? 'is-listening' : ''}`}>
+  <div className="audio-symbol" aria-hidden="true"><AudioWaveform /></div>
+  <div className="subtitle" aria-live="polite">
+  <span className="subtitle-label">CANLI ALTYAZI</span>
+  <span>{transcript || 'Konuşmaya başlamak için mikrofona dokun'}</span>
+  </div>
+  </div>
+  <div className="voice-controls">
+  <button className={`voice-button ${isListening ? 'active' : ''}`} onClick={isListening ? stopListening : toggleListening} aria-label={isListening ? 'Konuşmayı durdur' : 'Konuşmaya başla'}>
+  {isListening ? <Square fill="currentColor" /> : <Mic />}
+  </button>
+  <span>{isListening ? 'Konuşmayı durdur' : 'Konuşmaya başla'}</span>
+  </div>
+  {isAnswering && <div className="sent-note"><span>Jasper</span> Yanıtını hazırlıyor...</div>}
+  {isQuestion && <div className="question-modal-backdrop" role="presentation">
+  <section className="question-modal" role="dialog" aria-modal="true" aria-labelledby="question-title">
+  <button className="modal-close" onClick={() => setIsQuestion(false)} aria-label="Soruyu kapat"><X /></button>
+  <span className="modal-kicker">JASPER SORUYU ALGILADI</span>
+  <h2 id="question-title">Buna nasıl cevap vermemi istersin?</h2>
+  <p>Sesli yanıt verebilirim veya cevabını buraya yazabilirsin.</p>
+  <textarea value={questionAnswer} onChange={(event) => setQuestionAnswer(event.target.value)} placeholder="Cevabını yaz..." aria-label="Sorunun cevabı" autoFocus />
+  <button className="modal-submit" onClick={submitAnswer}>Cevabı gönder</button>
+  </section>
+  </div>}
+  </div>
         <footer className="footer"><span>© 2024 Jasper AI</span><a href="#privacy">Gizlilik</a><a href="#terms">Kullanım koşulları</a></footer>
       </section>
     </main>
