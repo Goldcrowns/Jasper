@@ -34,7 +34,7 @@ button { cursor: pointer; }
 .icon-button { border: 1px solid #2c2c2c; border-radius: 8px; background: #171717; color: #aaa; padding: 8px; } .icon-button svg { width: 16px; }
 .conversation-body { width: min(900px, calc(100% - 48px)); flex: 1; margin: 0 auto; display: flex; flex-direction: column; align-items: center; padding: 34px 0 38px; }
 .voice-stage { position: relative; width: 100%; flex: 1; min-height: 460px; display: grid; place-items: center; overflow: hidden; border-radius: 20px; background: #101010; }
-.jasp-video { width: min(380px, 70vw); height: min(380px, 70vw); object-fit: contain; border: 0; opacity: 0; transition: opacity .35s ease; }
+.jasp-video { width: min(380px, 70vw); height: min(380px, 70vw); object-fit: contain; border: 0; opacity: 1; mix-blend-mode: multiply; transition: opacity .35s ease; }
 .jasp-video:not([src=""]) { opacity: 1; }
 .video-fallback { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; opacity: .95; } .video-fallback img { width: min(380px, 70vw); aspect-ratio: 1; object-fit: contain; border-radius: 50%; }
 .voice-stage.is-listening .video-fallback { animation: pulse-jasp 1.8s ease-in-out infinite; }

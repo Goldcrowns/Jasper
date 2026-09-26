@@ -104,7 +104,7 @@ export default function Page() {
         <header className="topbar"><div className="mobile-brand"><span className="brand-dot"><JasperMark size={24} /></span>jasper</div><button className="icon-button" aria-label="Ayarlar"><Settings2 /></button></header>
         <div className="conversation-body">
           <div className={`voice-stage ${isListening ? 'is-listening' : ''}`}>
-            {!videoFailed && <video className="jasp-video" src="/jasper.mp4" autoPlay loop muted playsInline aria-label="Jasp animasyonu" onError={() => setVideoFailed(true)} />}
+            {!videoFailed && <video className="jasp-video" src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bloub-default-cycle%20%281%29-1PtQq74AaHUTGCK5sOHxJPoad9hfIk.mp4" autoPlay loop muted playsInline aria-label="Jasp animasyonu" onError={() => setVideoFailed(true)} />}
             <div className="video-fallback" aria-hidden="true">
               <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bloub-cercle-surpris-encre-LCvTeBSGTPqfpSY9wLlG3LSl2usrmb.png" alt="Jasp maskotu" />
             </div>
