@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Jasper — Sesli AI asistanın',
-  description: 'Jasper ile konuş, düşüncelerini paylaş ve gününü daha iyi organize et.',
+  title: 'Jasper Robotics — Robot Kontrol Paneli',
+  description: 'Jasper Rover için canlı telemetri, manuel kontrol ve seri port yönetimi.',
   generator: 'v0.app',
   icons: {
     icon: [
