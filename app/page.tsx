@@ -14,6 +14,7 @@ import {
   ChevronDown,
   CircleHelp,
   Gauge,
+  Gamepad2,
   LayoutDashboard,
   Pause,
   Play,
@@ -26,6 +27,11 @@ import {
   X,
   Zap,
 } from 'lucide-react'
+
+type BrowserSerialPort = {
+  writable?: WritableStream<Uint8Array>
+  open: (options: { baudRate: number }) => Promise<void>
+}
 
 const telemetry = [
   { label: 'Motor sıcaklığı', value: '42.8', unit: '°C', state: 'Normal', tone: 'green' },
@@ -46,12 +52,14 @@ export default function Page() {
   const [running, setRunning] = useState(true)
   const [activeNav, setActiveNav] = useState('Kontrol paneli')
   const [speed, setSpeed] = useState(42)
+  const [controlMode, setControlMode] = useState<'manual' | 'auto'>('manual')
+  const [joystick, setJoystick] = useState({ x: 0, y: 0 })
   const [showSettings, setShowSettings] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiReply, setAiReply] = useState('Hazırım. Robot durumunu analiz edebilir veya güvenli bir hareket komutu önerebilirim.')
   const [aiLoading, setAiLoading] = useState(false)
   const [serialLog, setSerialLog] = useState(logs)
-  const [port, setPort] = useState<SerialPort | null>(null)
+  const [port, setPort] = useState<BrowserSerialPort | null>(null)
 
   async function askRobot(event: React.FormEvent) {
     event.preventDefault()
@@ -73,7 +81,7 @@ export default function Page() {
       return
     }
     try {
-      const selectedPort = await (navigator as Navigator & { serial: { requestPort: () => Promise<SerialPort> } }).serial.requestPort()
+      const selectedPort = await (navigator as Navigator & { serial: { requestPort: () => Promise<BrowserSerialPort> } }).serial.requestPort()
       await selectedPort.open({ baudRate: 115200 })
       setPort(selectedPort)
       setConnected(true)
@@ -136,14 +144,14 @@ export default function Page() {
 
         <div className="dashboard-grid">
           <section className="hero-panel panel">
-            <div className="panel-heading"><div><p className="eyebrow">CANLI DURUM</p><h2>Jasper Rover <span className="version-pill">V1.2.4</span></h2></div><span className="running-badge"><span className="pulse-dot" />{running ? 'ÇALIŞIYOR' : 'BEKLEMEDE'}</span></div>
+            <div className="panel-heading"><div><p className="eyebrow live-heading"><Activity size={12} /> CANLI DURUM</p><h2>Jasper Rover <span className="version-pill">V1.2.4</span></h2></div><span className={`running-badge ${running ? 'is-running' : ''}`}><Activity size={13} />{running ? 'ÇALIŞIYOR' : 'BEKLEMEDE'}</span></div>
             <div className="robot-stage"><img className="robot-reference-image" src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20260929_142438-7ysn81kt1BbW6Rq7FkqJNX6ToVtsJl.jpg" alt="Jasper pan-tilt robot prototipi" /><div className="radar-ring ring-one" /><div className="radar-ring ring-two" /><div className="rover-illustration"><div className="rover-sensor" /><div className="rover-body"><div className="rover-screen">J</div><div className="rover-line" /></div><div className="rover-wheel left" /><div className="rover-wheel right" /></div><div className="stage-label"><span className="coord-dot" /> Pozisyon sabit <b>+41.0082, 28.9784</b></div></div>
             <div className="hero-controls"><button className={`primary-control ${running ? 'pause' : ''}`} onClick={() => setRunning(!running)}>{running ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}{running ? 'Durdur' : 'Başlat'}</button><button className="ghost-control" onClick={() => setRunning(false)}><RotateCcw size={16} /> Reset</button><button className="emergency-control"><Power size={16} /> Acil durdurma</button></div>
           </section>
 
           <section className="telemetry-panel panel"><div className="panel-heading"><div><p className="eyebrow">SİSTEM İZLEME</p><h2>Telemetri</h2></div><button className="panel-icon-button"><Activity size={16} /></button></div><div className="telemetry-list">{telemetry.map((item) => <div className="telemetry-row" key={item.label}><div className={`telemetry-icon ${item.tone}`}><TelemetryIcon label={item.label} /></div><span className="telemetry-label">{item.label}</span><strong>{item.value}<small>{item.unit}</small></strong><span className={`telemetry-state ${item.tone}`}>{item.state}</span></div>)}</div><div className="mini-chart"><div className="chart-meta"><span>Motor yükü</span><strong>38.4%</strong><small> son 60 dk</small></div><div className="chart-bars">{[35,42,36,55,47,61,52,68,58,72,64,77,59,65,48,54,43,38].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div></div></section>
 
-          <section className="manual-panel panel"><div className="panel-heading"><div><p className="eyebrow">MANUEL KONTROL</p><h2>Hareket komutları</h2></div><Gauge size={18} className="muted-icon" /></div><div className="d-pad"><button aria-label="İleri"><ArrowUp size={20} /></button><div><button aria-label="Sola dön"><ArrowDown size={20} className="turn-left" /></button><button aria-label="Geri"><ArrowDown size={20} /></button><button aria-label="Sağa dön"><ArrowDown size={20} className="turn-right" /></button></div></div><div className="speed-control"><div><span>Hız limiti</span><b>{speed}%</b></div><input type="range" min="0" max="100" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} /></div><p className="control-hint"><span>SHIFT</span> basılı tutarak hassas kontrolü etkinleştir</p></section>
+          <section className="manual-panel panel"><div className="panel-heading"><div><p className="eyebrow"><Gamepad2 size={12} /> KONTROL MERKEZİ</p><h2>{controlMode === 'manual' ? 'Manuel kontrol' : 'Otonom sürüş'}</h2></div><Gauge size={18} className="muted-icon" /></div><div className="mode-switch" role="group" aria-label="Kontrol modu"><button className={controlMode === 'manual' ? 'active' : ''} onClick={() => setControlMode('manual')}><Gamepad2 size={14} /> Manuel</button><button className={controlMode === 'auto' ? 'active' : ''} onClick={() => setControlMode('auto')}><Bot size={14} /> Otomatik</button></div><div className="joystick-wrap"><div className="joystick" role="slider" aria-label="Joystick yönü" aria-valuemin={-100} aria-valuemax={100} aria-valuenow={joystick.y} onPointerMove={(event) => { if (event.buttons) { const rect = event.currentTarget.getBoundingClientRect(); setJoystick({ x: Math.round(((event.clientX - rect.left) / rect.width - .5) * 100), y: Math.round(((event.clientY - rect.top) / rect.height - .5) * 100) }) } }} onPointerUp={() => setJoystick({ x: 0, y: 0 })}><div className="joystick-grid" /><div className="joystick-knob" style={{ transform: `translate(${joystick.x * .42}px, ${joystick.y * .42}px)` }}><Gamepad2 size={20} /></div></div><span>{controlMode === 'manual' ? 'Basılı tutarak sür' : 'Otonom mod aktif'}</span></div><div className="d-pad"><button aria-label="İleri"><ArrowUp size={20} /></button><div><button aria-label="Sola dön"><ArrowDown size={20} className="turn-left" /></button><button aria-label="Geri"><ArrowDown size={20} /></button><button aria-label="Sağa dön"><ArrowDown size={20} className="turn-right" /></button></div></div><div className="speed-control"><div><span>Hız limiti</span><b>{speed}%</b></div><input type="range" min="0" max="100" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} /></div><p className="control-hint"><span>SHIFT</span> basılı tutarak hassas kontrolü etkinleştir</p></section>
 
           <section className="terminal-panel panel"><div className="panel-heading"><div><p className="eyebrow">SERİ PORT / COM4</p><h2>Terminal günlüğü</h2></div><button className="panel-icon-button" onClick={connectSerial}><TerminalSquare size={16} /></button></div><div className="terminal-window">{serialLog.map(([time, message, type]) => <div className="log-line" key={time + message}><span>{time}</span><i className={type} /> <b>{message}</b></div>)}<div className="terminal-cursor"><span>›</span> Sistem hazır. Komut bekleniyor<span className="cursor-blink">_</span></div></div><button className="view-terminal" onClick={() => sendSerialCommand('PING')}>PING gönder <ArrowUp size={14} className="rotate-45" /></button></section>
           <section className="ai-panel panel"><div className="panel-heading"><div><p className="eyebrow">JASPER AI / GEMINI FLASH</p><h2>Robot asistanı <Bot size={16} className="ai-icon" /></h2></div><span className="ai-status"><span className="pulse-dot" /> ÇEVRİMİÇİ</span></div><div className="ai-message">{aiReply}</div><form className="ai-composer" onSubmit={askRobot}><input value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} placeholder="Robotuna bir şey sor veya komut ver..." aria-label="Robot AI komutu" /><button aria-label="AI komutunu gönder" disabled={aiLoading}>{aiLoading ? <Loader2 className="spin" size={16} /> : <Send size={16} />}</button></form><div className="ai-suggestions"><button onClick={() => setAiPrompt('Mevcut telemetriyi analiz et')}>Telemetriyi analiz et</button><button onClick={() => setAiPrompt('Güvenli bir test rutini öner')}>Test rutini öner</button></div></section>
